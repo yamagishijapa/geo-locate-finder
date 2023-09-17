@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.projeto.wplex.geo-locate-finder</groupId>
 	<artifactId>geo-locate-finder</artifactId>
-	<version>0.0.3</version>
+	<version>0.0.1-MULTI</version>
 	<name>geo-locate-finder</name>
 	<description>Projeto de Geolocalizacao</description>
 	<properties>
