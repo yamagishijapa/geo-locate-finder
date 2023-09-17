@@ -2,7 +2,6 @@ package com.projeto.wplex.geolocatefinder.utils;
 
 import com.projeto.wplex.geolocatefinder.model.RegisteredEvent;
 import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -16,8 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 public class FileProcessingUtil {
 
-    @Value("${custom.fileName}")
-    private static String entryFile;
+    private static final String entryFile = "src/main/resources/eventlog.csv";
 
     public static List<RegisteredEvent> readEntryFileCsv(Double targetLatitude, Double targetLongitude){
         List<RegisteredEvent> events = new ArrayList<>();
@@ -29,7 +27,7 @@ public class FileProcessingUtil {
 
                     int start = line.indexOf("\"");
                     int stop = line.indexOf("\"", start+2);
-                    String eventInfo = line.substring(start,stop+1);
+                    String eventInfo = line.substring(start+1,stop);
                     Integer deviceCode = Integer.parseInt(parts[0]);
                     String prefix = parts[1];
                     String timestamp = parts[2];

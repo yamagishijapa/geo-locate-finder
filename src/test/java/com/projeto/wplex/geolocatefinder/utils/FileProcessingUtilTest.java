@@ -18,7 +18,6 @@ public class FileProcessingUtilTest {
     @BeforeEach
     void SetUp() {
         MockitoAnnotations.openMocks(this);
-        ReflectionTestUtils.setField(FileProcessingUtil.class, "entryFile", "src/test/resources/eventlogTest.csv");
     }
 
     @Test
@@ -60,6 +59,6 @@ public class FileProcessingUtilTest {
         List<RegisteredEvent> events = FileProcessingUtil.readEntryFileCsv(-23.70041,-046.53713);
 
         // Verificar se o método retorna uma lista com dois eventos
-        assertEquals(1, events.size());
+        assertEquals(11, events.size());
     }
 }
