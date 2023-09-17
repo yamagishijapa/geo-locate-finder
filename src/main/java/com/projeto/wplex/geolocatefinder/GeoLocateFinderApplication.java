@@ -5,14 +5,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class GeoLocateFinderApplication implements CommandLineRunner {
+public class GeoLocateFinderApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(GeoLocateFinderApplication.class, args);
-	}
-
-	@Override
-	public void run(String... args) throws Exception {
-
 	}
 }
