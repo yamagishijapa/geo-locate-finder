@@ -20,6 +20,8 @@ import static com.projeto.wplex.geolocatefinder.geolocatefinder.utils.FileProces
 @Service
 public class GeoLocateServiceConsole {
 
+    private static final String nomeArquivo = "src/main/resources/arquivasso.csv";
+
     public void printLogoWplex(){
         System.out.println(" __          _______  _     ________   __");
         System.out.println(" \\ \\        / /  __ \\| |    |  ____\\ \\ / /");
@@ -30,6 +32,7 @@ public class GeoLocateServiceConsole {
     }
 
     public void iniciaProgramaConsole(Scanner scanner){
+        printLogoWplex();
 
         System.out.println("Bem vindo ao sistema de verificação da localização dos eventos registrados. \n");
         System.out.println("Para verificar quais eventos ocorreram próximos (dentro de um raio de 50m) da localização, utilize o comando ./csv-search --location <latitude>,<longitude>). \n");
@@ -66,38 +69,100 @@ public class GeoLocateServiceConsole {
             Double targetLatitude = Double.parseDouble(coordinates[0]);
             Double targetLongitude = Double.parseDouble(coordinates[1]);
 
-            sortEvents(readCsvToList(targetLatitude, targetLongitude));
+            //sortEvents(readCsvToList(0 , 7011860, targetLatitude, targetLongitude));
+            readCsvInParallel(targetLatitude, targetLongitude);
         }
     }
 
-    private List<RegisteredEvent> readCsvToList(Double targetLatitude, Double targetLongitude){
+    private void readCsvInParallel(Double targetLatitude, Double targetLongitude) {
         List<RegisteredEvent> events = new ArrayList<>();
-        log.info("Start reading csv: {}", LocalDateTime.now());
-        try (BufferedReader reader = new BufferedReader(new FileReader("src/main/resources/eventlog.csv"))) {
+        List<Thread> threads = getThreads(events, targetLatitude, targetLongitude);
+
+        // Aguarde até que todas as threads tenham concluído
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Continue com o processamento (ordenar e escrever no arquivo)
+        sortEvents(events);
+        fillResponseFileConsole(events);
+    }
+
+    private List<Thread> getThreads(List<RegisteredEvent> events, Double targetLatitude, Double targetLongitude) {
+        List<Thread> threads = new ArrayList<>();
+        int indexLimit = checkFileRegisterSize() / 4;
+        int indexInicio = 0;
+        int indexFim = 0;
+        for (int i = 0; i < 4; i++) {
+
+            indexInicio = indexLimit * i;
+
+            if(indexFim == 0){
+                indexFim = indexLimit;
+            } else{
+                indexFim = indexFim + indexLimit;
+            }
+
+            int finalIndexInicio = indexInicio;
+            int finalIndexFim = indexFim;
+            Thread thread = new Thread(() -> {
+                // Cada thread lê e processa uma parte do arquivo
+                List<RegisteredEvent> eventsChunk = readCsvToList(finalIndexInicio, finalIndexFim, targetLatitude, targetLongitude);
+
+                // Adicione os resultados à lista compartilhada
+                synchronized (events) {
+                    events.addAll(eventsChunk);
+                }
+            });
+            threads.add(thread);
+            thread.start();
+        }
+        return threads;
+    }
+
+    private Integer checkFileRegisterSize(){
+        try (BufferedReader reader = new BufferedReader(new FileReader(nomeArquivo))) {
+            return reader.lines().toList().size();
+        }catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+    }
+
+    private List<RegisteredEvent> readCsvToList(Integer startIndex, Integer endIndex, Double targetLatitude, Double targetLongitude){
+        List<RegisteredEvent> events = new ArrayList<>();
+        log.info("Start reading csv - startIndex {} to endIndex {} : {}", startIndex, endIndex, LocalDateTime.now());
+        try (BufferedReader reader = new BufferedReader(new FileReader(nomeArquivo))) {
+            int lineNumber = 0;
             for(String line : reader.lines().toList()){
                 if(!line.startsWith("device")){
-                    String[] parts = line.split(",");
+                    if(lineNumber >= startIndex && lineNumber < endIndex){
+                        String[] parts = line.split(",");
 
-                    int start = line.indexOf("\"");
-                    int stop = line.indexOf("\"", start+2);
-                    String eventInfo = line.substring(start,stop);
-                    Integer deviceCode = Integer.parseInt(parts[0]);
-                    String timestamp = parts[2];
+                        int start = line.indexOf("\"");
+                        int stop = line.indexOf("\"", start+2);
+                        String eventInfo = line.substring(start,stop);
+                        Integer deviceCode = Integer.parseInt(parts[0]);
+                        String timestamp = parts[2];
 
-                    String[] eventInfoSplit = eventInfo.split(",");
+                        String[] eventInfoSplit = eventInfo.split(",");
 
-                    if (eventInfoSplit.length >= 3) {
-                        Double latitude = Double.parseDouble(eventInfoSplit[2]);
-                        Double longitude = Double.parseDouble(eventInfoSplit[3].substring(0, eventInfoSplit[3].indexOf("<")));
-                        Double distancia = calculateDistance(targetLatitude, targetLongitude, latitude, longitude);
+                        if (eventInfoSplit.length >= 3) {
+                            Double latitude = Double.parseDouble(eventInfoSplit[2]);
+                            Double longitude = Double.parseDouble(eventInfoSplit[3].substring(0, eventInfoSplit[3].indexOf("<")));
+                            Double distancia = calculateDistance(targetLatitude, targetLongitude, latitude, longitude);
 
-                        if(distancia <= 50){
-                            events.add(RegisteredEvent.builder()
-                                    .deviceCode(deviceCode)
-                                    .timestamp(convertTimeStampToIso(timestamp))
-                                    .payload(eventInfo)
-                                    .distance(formatDoubleDecimal(distancia))
-                                    .build());
+                            if(distancia <= 50){
+                                events.add(RegisteredEvent.builder()
+                                        .deviceCode(deviceCode)
+                                        .timestamp(convertTimeStampToIso(timestamp))
+                                        .payload(eventInfo)
+                                        .distance(formatDoubleDecimal(distancia))
+                                        .build());
+                            }
                         }
                     }
                 }
@@ -115,7 +180,6 @@ public class GeoLocateServiceConsole {
             events.sort(Comparator.comparing(RegisteredEvent::getDeviceCode)
                     .thenComparing(RegisteredEvent::getTimestamp));
             log.info("Finish sorting results: {}", LocalDateTime.now());
-            fillResponseFileConsole(events);
         } else {
             System.out.print("\033[H\033[2J");
             System.out.flush();
