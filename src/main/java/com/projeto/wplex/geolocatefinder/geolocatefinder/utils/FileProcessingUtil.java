@@ -6,6 +6,9 @@ import lombok.NoArgsConstructor;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,8 +76,32 @@ public class FileProcessingUtil {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         // Distância em metros
-        double distance = earthRadius * c;
 
-        return distance;
+        return earthRadius * c;
+    }
+
+    public static Double formatDoubleDecimal(Double valorIni){
+        DecimalFormat format = new DecimalFormat("0.00");
+        String string = format.format(valorIni);
+        String[] part = string.split("[,]");
+        String string2 = part[0]+"."+part[1];
+        return Double.parseDouble(string2);
+    }
+
+    public static String convertTimeStampToIso(String timeStamp){
+
+        // Crie um formatador para o formato de entrada
+        DateTimeFormatter inputFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+        // Faça a conversão do timestamp para OffsetDateTime
+        OffsetDateTime offsetDateTime = OffsetDateTime.parse(timeStamp, inputFormatter);
+
+        // Crie um formatador personalizado para o formato desejado "yyyy-MM-dd HH:mm:ss.SSS"
+        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+
+        // Converta OffsetDateTime para uma string no formato desejado
+        String formatoDesejado = offsetDateTime.format(outputFormatter);
+
+        return formatoDesejado;
     }
 }

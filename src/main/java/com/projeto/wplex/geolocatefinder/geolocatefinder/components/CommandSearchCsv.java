@@ -19,7 +19,7 @@ public class CommandSearchCsv implements CommandLineRunner {
         Scanner scanner = new Scanner(System.in);
 
         service.printLogoWplex();
-        service.verificaDistanciaEntradaConsole(scanner);
+        service.iniciaProgramaConsole(scanner);
 
 
     }
