@@ -1,4 +1,4 @@
-package com.projeto.wplex.geolocatefinder.geolocatefinder;
+package com.projeto.wplex.geolocatefinder;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;

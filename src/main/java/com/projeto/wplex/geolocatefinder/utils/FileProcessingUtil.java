@@ -1,7 +1,8 @@
-package com.projeto.wplex.geolocatefinder.geolocatefinder.utils;
+package com.projeto.wplex.geolocatefinder.utils;
 
-import com.projeto.wplex.geolocatefinder.geolocatefinder.model.RegisteredEvent;
+import com.projeto.wplex.geolocatefinder.model.RegisteredEvent;
 import lombok.NoArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -15,19 +16,24 @@ import java.util.List;
 @NoArgsConstructor
 public class FileProcessingUtil {
 
+    @Value("${custom.fileName}")
+    private static String entryFile;
+
     public static List<RegisteredEvent> readEntryFileCsv(Double targetLatitude, Double targetLongitude){
         List<RegisteredEvent> events = new ArrayList<>();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader("src/main/resources/arquivasso.csv"))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(entryFile))) {
             for(String line : reader.lines().toList()){
                 if(!line.startsWith("device")){
                     String[] parts = line.split(",");
 
                     int start = line.indexOf("\"");
                     int stop = line.indexOf("\"", start+2);
-                    String eventInfo = line.substring(start,stop);
+                    String eventInfo = line.substring(start,stop+1);
                     Integer deviceCode = Integer.parseInt(parts[0]);
+                    String prefix = parts[1];
                     String timestamp = parts[2];
+                    String companyName = parts[7];
 
                     String[] eventInfoSplit = eventInfo.split(",");
 
@@ -36,12 +42,16 @@ public class FileProcessingUtil {
                         double longitude = Double.parseDouble(eventInfoSplit[3].substring(0, eventInfoSplit[3].indexOf("<")));
                         Double distancia = calculateDistance(targetLatitude, targetLongitude, latitude, longitude);
 
-                        if(distancia >= 50){
+                        if(distancia <= 50){
                             events.add(RegisteredEvent.builder()
                                     .deviceCode(deviceCode)
-                                    .timestamp(timestamp)
+                                    .prefix(prefix)
+                                    .timestamp(convertTimeStampToIso(timestamp))
                                     .payload(eventInfo)
-                                    .distance(distancia)
+                                    .companyName(companyName)
+                                    .distance(formatDoubleDecimal(distancia))
+                                    .latitude(latitude)
+                                    .longitude(longitude)
                                     .build());
                         }
                     }
@@ -90,18 +100,12 @@ public class FileProcessingUtil {
 
     public static String convertTimeStampToIso(String timeStamp){
 
-        // Crie um formatador para o formato de entrada
         DateTimeFormatter inputFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
-        // Faça a conversão do timestamp para OffsetDateTime
         OffsetDateTime offsetDateTime = OffsetDateTime.parse(timeStamp, inputFormatter);
 
-        // Crie um formatador personalizado para o formato desejado "yyyy-MM-dd HH:mm:ss.SSS"
         DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
-        // Converta OffsetDateTime para uma string no formato desejado
-        String formatoDesejado = offsetDateTime.format(outputFormatter);
-
-        return formatoDesejado;
+        return offsetDateTime.format(outputFormatter);
     }
 }
