@@ -1,7 +1,9 @@
-package com.projeto.wplex.geolocatefinder.geolocatefinder.service;
+package com.projeto.wplex.geolocatefinder.service;
 
-import com.projeto.wplex.geolocatefinder.geolocatefinder.model.RegisteredEvent;
+import com.projeto.wplex.geolocatefinder.model.RegisteredEvent;
+import com.projeto.wplex.geolocatefinder.utils.FileProcessingUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -20,7 +22,8 @@ import static com.projeto.wplex.geolocatefinder.geolocatefinder.utils.FileProces
 @Service
 public class GeoLocateServiceConsole {
 
-    private static final String nomeArquivo = "src/main/resources/arquivasso.csv";
+    @Value("${custom.fileName}")
+    private String entryFile;
 
     public void printLogoWplex(){
         System.out.println(" __          _______  _     ________   __");
@@ -32,6 +35,7 @@ public class GeoLocateServiceConsole {
     }
 
     public void iniciaProgramaConsole(Scanner scanner){
+
         printLogoWplex();
 
         System.out.println("Bem vindo ao sistema de verificação da localização dos eventos registrados. \n");
