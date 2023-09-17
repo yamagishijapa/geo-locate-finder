@@ -1,7 +1,9 @@
-package com.projeto.wplex.geolocatefinder.geolocatefinder.service;
+package com.projeto.wplex.geolocatefinder.service;
 
-import com.projeto.wplex.geolocatefinder.geolocatefinder.model.RegisteredEvent;
+import com.projeto.wplex.geolocatefinder.model.RegisteredEvent;
+import com.projeto.wplex.geolocatefinder.utils.FileProcessingUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -14,11 +16,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 
-import static com.projeto.wplex.geolocatefinder.geolocatefinder.utils.FileProcessingUtil.calculateDistance;
-
 @Slf4j
 @Service
 public class GeoLocateServiceConsole {
+
+    @Value("${custom.fileName}")
+    private String entryFile;
 
     public void printLogoWplex(){
         System.out.println(" __          _______  _     ________   __");
@@ -29,13 +32,22 @@ public class GeoLocateServiceConsole {
         System.out.println("     \\/  \\/   |_|    |______|______/_/ \\_\\\n");
     }
 
-    public void verificaDistanciaEntradaConsole(Scanner scanner){
+    public void iniciaProgramaConsole(Scanner scanner){
+
+        printLogoWplex();
+
+        System.out.println("Bem vindo ao sistema de verificação da localização dos eventos registrados. \n");
+        System.out.println("Para verificar quais eventos ocorreram próximos (dentro de um raio de 50m) da localização, utilize o comando ./csv-search --location <latitude>,<longitude>). \n");
+        System.out.print("Por exemplo: './csv-search --location -23.70041,-046.53713' \n");
+        System.out.print("Para sair do programa, digite 'exit'. \n");
+
+        validaEntradasUsuario(scanner);
+    }
+
+    public void validaEntradasUsuario(Scanner scanner){
 
         while (true) {
-            System.out.println("Bem vindo ao sistema de verificação da localização dos eventos registrados. \n");
-            System.out.println("Para verificar quais eventos ocorreram próximos (dentro de um raio de 50m) da localização, utilize o comando ./csv-search --location <latitude>,<longitude>). \n");
-            System.out.print("Por exemplo: './csv-search --location -23.70041,-046.53713' \n");
-            System.out.print("Para sair do programa, digite 'exit'. \n");
+
             String userInput = scanner.nextLine();
 
             if (userInput.equalsIgnoreCase("exit")) {
@@ -59,61 +71,60 @@ public class GeoLocateServiceConsole {
             Double targetLatitude = Double.parseDouble(coordinates[0]);
             Double targetLongitude = Double.parseDouble(coordinates[1]);
 
-            //Leitura do arquivo de entrada csv
-            log.info("Start reading csv: {}", LocalDateTime.now());
-            List<RegisteredEvent> events = readEntryFileCsv(targetLatitude, targetLongitude);
-            log.info("Ending reading csv: {}", LocalDateTime.now());
-
-            if(!events.isEmpty()){
-                log.info("Start sorting results: {}", LocalDateTime.now());
-                events.sort(Comparator.comparing(RegisteredEvent::getDeviceCode)
-                        .thenComparing(RegisteredEvent::getTimestamp));
-                log.info("Finish sorting results: {}", LocalDateTime.now());
-                fillResponseFileConsole(events);
-            } else {
-                System.out.print("\033[H\033[2J");
-                System.out.flush();
-                System.out.println("Nenhum evento do arquivo foi localizado dentro de um raio de 50m da coordenada informada. \n");
-            }
+            sortEvents(readCsvToList(targetLatitude, targetLongitude));
         }
     }
 
-    private List<RegisteredEvent> readEntryFileCsv(Double targetLatitude, Double targetLongitude){
+    private List<RegisteredEvent> readCsvToList(Double targetLatitude, Double targetLongitude){
         List<RegisteredEvent> events = new ArrayList<>();
-
-        try (BufferedReader reader = new BufferedReader(new FileReader("src/main/resources/arquivasso.csv"))) {
+        log.info("Start reading csv: {}", LocalDateTime.now());
+        try (BufferedReader reader = new BufferedReader(new FileReader(entryFile))) {
             for(String line : reader.lines().toList()){
                 if(!line.startsWith("device")){
                     String[] parts = line.split(",");
 
                     int start = line.indexOf("\"");
                     int stop = line.indexOf("\"", start+2);
-                    String eventInfo = line.substring(start,stop);
+                    String eventInfo = line.substring(start,stop+1);
                     Integer deviceCode = Integer.parseInt(parts[0]);
-                    String prefix = parts[1];
                     String timestamp = parts[2];
 
                     String[] eventInfoSplit = eventInfo.split(",");
 
                     if (eventInfoSplit.length >= 3) {
-                        double latitude = Double.parseDouble(eventInfoSplit[2]);
-                        double longitude = Double.parseDouble(eventInfoSplit[3].substring(0, eventInfoSplit[3].indexOf("<")));
-                        Double distancia = calculateDistance(targetLatitude, targetLongitude, latitude, longitude);
+                        Double latitude = Double.parseDouble(eventInfoSplit[2]);
+                        Double longitude = Double.parseDouble(eventInfoSplit[3].substring(0, eventInfoSplit[3].indexOf("<")));
+                        Double distancia = FileProcessingUtil.calculateDistance(targetLatitude, targetLongitude, latitude, longitude);
 
-                        if(distancia >= 50){
+                        if(distancia <= 50){
                             events.add(RegisteredEvent.builder()
                                     .deviceCode(deviceCode)
-                                    .timestamp(timestamp)
+                                    .timestamp(FileProcessingUtil.convertTimeStampToIso(timestamp))
                                     .payload(eventInfo)
-                                    .distance(distancia)
+                                    .distance(FileProcessingUtil.formatDoubleDecimal(distancia))
                                     .build());
                         }
                     }
                 }
             }
+            log.info("Ending reading csv: {}", LocalDateTime.now());
             return events;
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void sortEvents(List<RegisteredEvent> events){
+        if(!events.isEmpty()){
+            log.info("Start sorting results: {}", LocalDateTime.now());
+            events.sort(Comparator.comparing(RegisteredEvent::getDeviceCode)
+                    .thenComparing(RegisteredEvent::getTimestamp));
+            log.info("Finish sorting results: {}", LocalDateTime.now());
+            fillResponseFileConsole(events);
+        } else {
+            System.out.print("\033[H\033[2J");
+            System.out.flush();
+            System.out.println("Nenhum evento do arquivo foi localizado dentro de um raio de 50m da coordenada informada. \n");
         }
     }
 
