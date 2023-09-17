@@ -1,6 +1,6 @@
-package com.projeto.wplex.geolocatefinder.geolocatefinder.components;
+package com.projeto.wplex.geolocatefinder.components;
 
-import com.projeto.wplex.geolocatefinder.geolocatefinder.service.GeoLocateServiceConsole;
+import com.projeto.wplex.geolocatefinder.service.GeoLocateServiceConsole;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,6 @@ public class CommandSearchCsv implements CommandLineRunner {
 
         Scanner scanner = new Scanner(System.in);
 
-        service.printLogoWplex();
         service.iniciaProgramaConsole(scanner);
 
 

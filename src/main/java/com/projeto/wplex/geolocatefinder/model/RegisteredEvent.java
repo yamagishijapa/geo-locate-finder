@@ -1,4 +1,4 @@
-package com.projeto.wplex.geolocatefinder.geolocatefinder.model;
+package com.projeto.wplex.geolocatefinder.model;
 
 import lombok.*;
 
@@ -9,8 +9,6 @@ import lombok.*;
 @NoArgsConstructor
 @ToString
 public class RegisteredEvent {
-    String id;
-
     Integer deviceCode;
     String prefix;
     String timestamp;
