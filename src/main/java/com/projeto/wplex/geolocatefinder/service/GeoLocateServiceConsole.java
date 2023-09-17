@@ -1,7 +1,6 @@
 package com.projeto.wplex.geolocatefinder.service;
 
 import com.projeto.wplex.geolocatefinder.model.RegisteredEvent;
-import com.projeto.wplex.geolocatefinder.utils.FileProcessingUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 
-import static com.projeto.wplex.geolocatefinder.geolocatefinder.utils.FileProcessingUtil.*;
+import static com.projeto.wplex.geolocatefinder.utils.FileProcessingUtil.*;
 
 @Slf4j
 @Service
@@ -129,7 +128,7 @@ public class GeoLocateServiceConsole {
     }
 
     private Integer checkFileRegisterSize(){
-        try (BufferedReader reader = new BufferedReader(new FileReader(nomeArquivo))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(entryFile))) {
             return reader.lines().toList().size();
         }catch (IOException e) {
                 throw new RuntimeException(e);
@@ -139,7 +138,7 @@ public class GeoLocateServiceConsole {
     private List<RegisteredEvent> readCsvToList(Integer startIndex, Integer endIndex, Double targetLatitude, Double targetLongitude){
         List<RegisteredEvent> events = new ArrayList<>();
         log.info("Start reading csv - startIndex {} to endIndex {} : {}", startIndex, endIndex, LocalDateTime.now());
-        try (BufferedReader reader = new BufferedReader(new FileReader(nomeArquivo))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(entryFile))) {
             int lineNumber = 0;
             for(String line : reader.lines().toList()){
                 if(!line.startsWith("device")){
