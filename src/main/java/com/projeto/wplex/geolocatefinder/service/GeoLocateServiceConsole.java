@@ -24,6 +24,8 @@ public class GeoLocateServiceConsole {
     @Value("${custom.fileName}")
     private String entryFile;
 
+    @Value("${custom.numberOfThreads}")
+    private Integer numThreads;
     public void printLogoWplex(){
         System.out.println(" __          _______  _     ________   __");
         System.out.println(" \\ \\        / /  __ \\| |    |  ____\\ \\ / /");
@@ -97,10 +99,10 @@ public class GeoLocateServiceConsole {
 
     private List<Thread> getThreads(List<RegisteredEvent> events, Double targetLatitude, Double targetLongitude) {
         List<Thread> threads = new ArrayList<>();
-        int indexLimit = checkFileRegisterSize() / 4;
+        int indexLimit = checkFileRegisterSize() / numThreads;
         int indexInicio = 0;
         int indexFim = 0;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < numThreads; i++) {
 
             indexInicio = indexLimit * i;
 

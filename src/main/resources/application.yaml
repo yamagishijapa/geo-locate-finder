@@ -3,3 +3,4 @@ spring:
     web-application-type: none
 custom:
   fileName: "src/main/resources/eventlog.csv"
+  numberOfThreads: "4"
